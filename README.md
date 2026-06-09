@@ -5,10 +5,11 @@ An interactive visual guide to Transformer architecture, built as a single stati
 [Read the interactive article](https://sabari-ui.github.io/Transformers/)
 
 [View the notebook on GitHub](https://github.com/sabari-ui/Transformers/blob/main/transformers.ipynb) |
-[Run the notebook in Google Colab](https://colab.research.google.com/github/sabari-ui/Transformers/blob/main/transformers.ipynb)
+[Run the notebook in Binder](https://mybinder.org/v2/gh/sabari-ui/Transformers/main?filepath=transformers.ipynb)
 
-The GitHub repository remains read-only for visitors. Colab users can run and change a temporary session or save a
-copy to their own Google Drive, but they cannot overwrite the original notebook in this repository.
+The GitHub repository remains read-only for visitors. Binder users can run and change a temporary session, but they
+cannot overwrite the original notebook in this repository. Binder sessions are temporary and changes disappear when
+the session ends unless users download their work.
 
 ## What It Covers
 
@@ -28,8 +29,8 @@ Open `index.html` directly in a browser.
 
 ## Run the Notebook
 
-Open the Colab link above and choose **Runtime -> Run all**. The notebook dependencies are listed in
-`requirements.txt`.
+Open the Binder link above, wait for the environment to build, then run the notebook cells. The notebook dependencies
+are listed in `requirements.txt`.
 
 ## License
 

@@ -719,8 +719,32 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
       margin: -24px 0 32px;
       font-family: var(--sans);
+    }
+
+    .colab-button {
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--text);
+      background: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.2s;
+    }
+
+    .colab-button:hover {
+      border-color: var(--enc);
+      background: var(--enc-bg);
+      color: var(--enc);
+      transform: translateY(-1px);
     }
 
     .mode-btn {
@@ -900,6 +924,7 @@
     body.dark-mode .head-card,
     body.dark-mode .mode-btn,
     body.dark-mode .theme-switch,
+    body.dark-mode .colab-button,
     body.dark-mode .text-input {
       background: #11131a;
     }
