@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Illustrated Transformer — A Complete Visual Guide</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div id="progress-top" class="progress-top"></div>
+
+  <header class="site-header">
+    <div class="site-header-inner">
+      <!-- <span class="site-name">// transformer</span> -->
+      <nav class="site-nav">
+        <a class="site-nav-link" href="#learn-path">Learn</a>
+        <a class="site-nav-link" href="#encoder">Encoder</a>
+        <a class="site-nav-link" href="#decoder">Decoder</a>
+        <a class="site-nav-link" href="#output">Output</a>
+        <a class="site-nav-link" href="#llms">LLMs</a>
+      </nav>
+    </div>
+  </header>
+
+  <article>
+
+    <!-- TITLE -->
+    <h1>The Transformers</h1>
+    <div class="article-meta">
+      <span>A complete visual guide</span>
+      <!-- <span class="meta-tag">Vaswani et al. 2017</span> -->
+      <div>
+        <span style="font-weight: 200;">8 steps</span>
+        <span>|</span>
+        <span style="font-weight: 200;">Interactive</span>
+      </div>
+    </div>
+
+    <div class="mode-controls fade-in" aria-label="Reading controls">
+      <button class="theme-switch" id="theme-switch" type="button" aria-label="Toggle dark mode" aria-pressed="false">
+        <span class="theme-switch-icon" aria-hidden="true">☀</span>
+        <span class="theme-switch-icon" aria-hidden="true">☾</span>
+        <span class="theme-switch-thumb" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc fade-in">
+      <div class="toc-title">Contents</div>
+      <ol>
+        
+        <li><a href="#learn-path">How to use this guide</a></li>
+        <li><a href="#big-picture">The big picture — what is a transformer?</a></li>
+        <li><a href="#step1">Step 1 — Tokenization & embeddings</a></li>
+        <li><a href="#step2">Step 2 — Positional encoding</a></li>
+        <li><a href="#step3">Step 3 — Query, Key, Value</a></li>
+        <li><a href="#step4">Step 4 — Scaled dot-product attention</a></li>
+        <li><a href="#step5">Step 5 — Multi-head attention</a></li>
+        <li><a href="#step6">Step 6 — Feed-forward + residuals + LayerNorm</a></li>
+        <li><a href="#step7a">Step 7a — Masked self-attention</a></li>
+        <li><a href="#step7b">Step 7b — Cross-attention</a></li>
+        <li><a href="#step8">Step 8 — Output probabilities</a></li>
+        <li><a href="#training">How transformers learn</a></li>
+        <li><a href="#llms">From the original Transformer to modern LLMs</a></li>
+        <li><a href="#limits">Limitations and responsible use</a></li>
+        <li><a href="#community">Open community notes</a></li>
+      </ol>
+      
+    </div>
+
+    <h2 id="learn-path">How To Use This Guide</h2>
+
+    <p class="fade-in">This page is written for curious learners who have seen the famous Transformer diagram and want
+      to understand what each block actually does. You do not need to be an expert, but a little comfort with vectors,
+      matrices, and probabilities will help the equations feel less mysterious.</p>
+
+    <div class="guide-grid fade-in">
+      <div class="guide-card">
+        <div class="guide-card-title">Start here</div>
+        <strong>Read the diagrams first.</strong> Let the shapes and arrows give you the story before you slow down for
+        the equations.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Then deepen</div>
+        Read the formulas as optional detail. The surrounding explanation tells the story first, and the equations are
+        there when you want precision.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">End goal</div>
+        By the end, you should understand tokenization, attention, masking, cross-attention, decoding, training, and how
+        this connects to modern LLMs.
+      </div>
+    </div>
+
+    <div class="callout amber fade-in">
+      <div class="callout-title">Prerequisites</div>
+      Helpful but not required: vectors, matrix multiplication, softmax, probability distributions, and the idea of a
+      neural network learning weights from data.
+    </div>
+
+    <!-- TRANSFORMERS IMAGE INTRO -->
+    <div class="figure fade-in" style="margin: 60px 0 24px 0;">
+      <div style="display: flex; justify-content: center;">
+        <img src="transformers.png" alt="Transformer Architecture" style="max-width: 100%; max-height: 600px; object-fit: contain;">
+      </div>
+    </div>
+    <p class="fade-in" style="font-family:var(--sans);font-size:13px;color:var(--muted);margin-top:-8px;margin-bottom:24px">
+      Image source: Niklas Heidloff,
+      <a href="https://heidloff.net/article/foundation-models-transformers-bert-and-gpt/">Foundation Models,
+        Transformers, BERT and GPT</a>.
+    </p>
+    <p class="fade-in" style="color: #000000; margin-bottom: 60px;">
+      As an AI enthusiast learning about transformers, you have likely come across this architectural image but may not have a clear picture of what it means and how it helps achieve such great things. This guide will break it down for you step by step.
+    </p>
+
+    <!-- BIG PICTURE -->
+    <h2 id="big-picture">The Big Picture</h2>
+
+
+    <p>Let's start from the outside in. A transformer takes a sequence of tokens and produces another sequence of
+      tokens. In machine translation — the original use case — it takes a French sentence and produces its English
+      translation.</p>
+
+    <!-- High-level black box diagram -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 680 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;font-family:var(--sans)">
+          <!-- Input tokens -->
+          <rect x="10" y="50" width="140" height="40" rx="8" fill="#eef3fd" stroke="#3b6fd4" stroke-width="1.5" />
+          <text x="80" y="66" text-anchor="middle" font-size="11" fill="#6b7280" font-family="var(--sans)">INPUT</text>
+          <text x="80" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a2e">Je suis
+            étudiant</text>
+
+          <!-- Arrow -->
+          <line x1="155" y1="70" x2="215" y2="70" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr1)" />
+          <defs>
+            <marker id="arr1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#9ca3af" />
+            </marker>
+          </defs>
+
+          <!-- Transformer box -->
+          <rect x="220" y="20" width="240" height="100" rx="12" fill="#f0f4ff" stroke="#3b6fd4" stroke-width="2" />
+          <text x="340" y="62" text-anchor="middle" font-size="11" fill="#6b7280">THE</text>
+          <text x="340" y="80" text-anchor="middle" font-size="16" font-weight="700" fill="#1a1a2e">TRANSFORMER</text>
+          <text x="340" y="98" text-anchor="middle" font-size="10" fill="#9ca3af" font-family="var(--mono)">encoder +
+            decoder</text>
+
+          <!-- Arrow -->
+          <defs>
+            <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#9ca3af" />
+            </marker>
+          </defs>
+          <line x1="465" y1="70" x2="520" y2="70" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arr2)" />
+
+          <!-- Output tokens -->
+          <rect x="525" y="50" width="145" height="40" rx="8" fill="#edf9f3" stroke="#2d9e6b" stroke-width="1.5" />
+          <text x="597" y="66" text-anchor="middle" font-size="11" fill="#6b7280"
+            font-family="var(--sans)">OUTPUT</text>
+          <text x="597" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#1a1a2e">I am a
+            student</text>
+        </svg>
+      </div>
+      <div class="figure-caption">The transformer as a black box: French sentence in, English translation out.</div>
+    </div>
+
+    <p>Opening the box, we see two major components: an <strong>encoder</strong> and a <strong>decoder</strong>,
+      connected by a bridge of contextual vectors. The encoder reads and understands the input. The decoder generates
+      the output one token at a time.</p>
+
+    <!-- Encoder/Decoder diagram -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;font-family:var(--sans)">
+          <defs>
+            <marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+            </marker>
+            <marker id="a4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#2d9e6b" />
+            </marker>
+          </defs>
+
+          <!-- Encoder stack -->
+          <rect x="60" y="40" width="230" height="140" rx="12" fill="#eef3fd" stroke="#3b6fd4" stroke-width="2" />
+          <text x="175" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a2e">ENCODERS</text>
+          <text x="175" y="86" text-anchor="middle" font-size="11" fill="#6b7280">N × (self-attn + FFN)</text>
+          <!-- stack lines -->
+          <rect x="80" y="145" width="190" height="22" rx="5" fill="#fff" stroke="#c5d3f0" stroke-width="1" />
+          <rect x="80" y="120" width="190" height="22" rx="5" fill="#fff" stroke="#c5d3f0" stroke-width="1" />
+          <rect x="80" y="95" width="190" height="22" rx="5" fill="#c5d3f0" stroke="#3b6fd4" stroke-width="1" />
+          <text x="175" y="110" text-anchor="middle" font-size="10" fill="#3b6fd4">Encoder layer N</text>
+          <text x="175" y="133" text-anchor="middle" font-size="10" fill="#9ca3af">Encoder layer 2</text>
+          <text x="175" y="158" text-anchor="middle" font-size="10" fill="#9ca3af">Encoder layer 1</text>
+
+          <!-- Input arrow up -->
+          <line x1="175" y1="210" x2="175" y2="185" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a3)" />
+          <text x="175" y="215" text-anchor="middle" font-size="11" fill="#6b7280">input tokens</text>
+
+          <!-- Bridge arrow -->
+          <line x1="295" y1="110" x2="385" y2="110" stroke="#6b7280" stroke-width="2" marker-end="url(#a3)" />
+          <text x="340" y="103" text-anchor="middle" font-size="10" fill="#6b7280"
+            font-family="var(--mono)">context</text>
+          <text x="340" y="126" text-anchor="middle" font-size="10" fill="#6b7280"
+            font-family="var(--mono)">vectors</text>
+
+          <!-- Decoder stack -->
+          <rect x="390" y="40" width="230" height="140" rx="12" fill="#fceef3" stroke="#c2436a" stroke-width="2" />
+          <text x="505" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#1a1a2e">DECODERS</text>
+          <text x="505" y="86" text-anchor="middle" font-size="11" fill="#6b7280">N × (masked + cross-attn +
+            FFN)</text>
+          <rect x="410" y="145" width="190" height="22" rx="5" fill="#fff" stroke="#f0c5d0" stroke-width="1" />
+          <rect x="410" y="120" width="190" height="22" rx="5" fill="#fff" stroke="#f0c5d0" stroke-width="1" />
+          <rect x="410" y="95" width="190" height="22" rx="5" fill="#f0c5d0" stroke="#c2436a" stroke-width="1" />
+          <text x="505" y="110" text-anchor="middle" font-size="10" fill="#c2436a">Decoder layer N</text>
+          <text x="505" y="133" text-anchor="middle" font-size="10" fill="#9ca3af">Decoder layer 2</text>
+          <text x="505" y="158" text-anchor="middle" font-size="10" fill="#9ca3af">Decoder layer 1</text>
+
+          <!-- Output arrow up -->
+          <line x1="505" y1="40" x2="505" y2="18" stroke="#2d9e6b" stroke-width="1.5" marker-end="url(#a4)" />
+          <text x="505" y="12" text-anchor="middle" font-size="11" fill="#2d9e6b">output tokens</text>
+        </svg>
+      </div>
+      <div class="figure-caption">The encoder stack processes the input all at once. The decoder generates output token
+        by token, attending to both its own previous outputs and the encoder's context.</div>
+    </div>
+
+    <p>The key insight: the encoder processes all tokens <em>in parallel</em> and builds a rich contextual
+      representation. The decoder consumes those representations and generates the output sequence one step at a time,
+      autoregressive-ly.</p>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">Core tensor shapes</span>
+      <div class="eq-main">X: (batch, seq_len, d_model)
+        Q, K: (batch, heads, seq_len, d_k)
+        V: (batch, heads, seq_len, d_v)
+        QKᵀ: (batch, heads, seq_len, seq_len)
+        attention output: (batch, seq_len, d_model)</div>
+    </div>
+
+    <p>In this guide we use the sentence <em>"The animal didn't cross the street because it was too tired"</em> — a
+      classic example that reveals why attention is so powerful. What does "it" refer to? The animal, not the street. A
+      human knows this immediately. We'll see how attention figures it out.</p>
+
+    <h3>Architecture families</h3>
+    <p class="fade-in">The original 2017 Transformer used both an encoder and a decoder, but modern models often keep
+      only the part they need. This is the easiest way to connect the classic diagram to real systems you hear about
+      today.</p>
+
+    <div class="figure fade-in">
+      <div class="figure-body" style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Family</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">What it keeps</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Best at</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px;font-weight:700;color:var(--enc)">Encoder-only</td>
+              <td style="padding:10px 12px">Bidirectional self-attention</td>
+              <td style="padding:10px 12px">Understanding, classification, retrieval</td>
+              <td style="padding:10px 12px;font-family:var(--mono);font-size:12px">BERT, RoBERTa</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px;font-weight:700;color:var(--dec)">Decoder-only</td>
+              <td style="padding:10px 12px">Causal masked self-attention</td>
+              <td style="padding:10px 12px">Next-token generation, chat, code</td>
+              <td style="padding:10px 12px;font-family:var(--mono);font-size:12px">GPT, Llama, Mistral</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px;font-weight:700;color:var(--green)">Encoder-decoder</td>
+              <td style="padding:10px 12px">Encoder, decoder, and cross-attention</td>
+              <td style="padding:10px 12px">Translation, summarisation, text-to-text tasks</td>
+              <td style="padding:10px 12px;font-family:var(--mono);font-size:12px">Original Transformer, T5, BART</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="figure-caption">Same attention idea, different wiring. The task decides which Transformer parts are
+        useful.</div>
+    </div>
+
+    <!-- ────────────────────────────────── ENCODER ────────────────── -->
+    <div class="section-divider fade-in">
+      <div class="section-divider-line"></div>
+      <span style="font-family:var(--sans);font-size:13px;display:flex;gap:20px;color:var(--enc)" id="encoder">ENCODER —
+        STEPS 1–6</span>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- STEP 1 -->
+    <h2 id="step1">Step 1 — Tokenization &amp; Embeddings</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">1</div> Encoder · Input stage
+    </div>
+
+    <p>Before any neural computation, the input sentence must be converted into numbers. A <strong>tokenizer</strong>
+      splits the text into tokens — words, subwords, or characters depending on the vocabulary. Each token is assigned
+      an integer ID by looking it up in a fixed vocabulary table.</p>
+
+    <p>Those integer IDs are then mapped through an <strong>embedding matrix</strong> — a lookup table of shape
+      <code>vocab_size × d_model</code>. Each token maps to a dense vector of dimension <code>d_model</code> (768 in
+      BERT-base, 12,288 in GPT-3). This is just a dictionary lookup — no computation yet.
+    </p>
+
+    <div class="callout enc fade-in">
+      <div class="callout-title"> Why embeddings?</div>
+      Words like "king" and "queen" end up with similar vectors because they appear in similar contexts during training.
+      The famous king − man + woman ≈ queen arithmetic emerges entirely from this lookup table — no explicit rules.
+    </div>
+
+    <!-- Interactive embedding table -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <div class="embed-scroll">
+          <table class="embed-table" id="embed-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding-left:12px">Token</th>
+                <th>d₀</th>
+                <th>d₁</th>
+                <th>d₂</th>
+                <th>d₃</th>
+                <th>d₄</th>
+                <th>d₅</th>
+                <th>…</th>
+                <th>d₇₆₇</th>
+              </tr>
+            </thead>
+            <tbody id="embed-tbody"></tbody>
+          </table>
+        </div>
+        <p style="font-family:var(--sans);font-size:13px;color:var(--muted);margin-top:12px;margin-bottom:0">Hover a row
+          to highlight it. Values are illustrative — real embeddings are learned.</p>
+      </div>
+      <div class="figure-caption">The embedding matrix — each token maps to a 768-dimensional vector. Shape: seq_len ×
+        d_model = 9 × 768.</div>
+    </div>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">Equation · Static embedding lookup</span>
+      <div class="eq-main">E = EmbeddingMatrix[token_ids] &nbsp;→&nbsp; shape: (seq_len × d_model)</div>
+    </div>
+
+    <!-- STEP 2 -->
+    <h2 id="step2">Step 2 — Positional Encoding</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">2</div> Encoder · Position injection
+    </div>
+
+    <p>Here's a fundamental problem: transformers process all tokens simultaneously. Unlike RNNs that read
+      left-to-right, a transformer sees all tokens at once — meaning it has no built-in sense of order. "The dog bit the
+      man" and "The man bit the dog" would produce the same embeddings without any positional information.</p>
+
+    <p>The solution: <strong>add a positional vector to each embedding</strong>. The original Transformer uses
+      sinusoidal functions of different frequencies — each position gets a unique pattern of sine and cosine values
+      across dimensions.</p>
+
+    <!-- Positional encoding diagram -->
+    <div class="figure fade-in">
+      <div class="figure-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <svg viewBox="0 0 300 100" style="width:100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="pa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#3b6fd4" />
+              </marker>
+            </defs>
+            <rect x="10" y="30" width="80" height="40" rx="6" fill="#eef3fd" stroke="#3b6fd4" stroke-width="1.5" />
+            <text x="50" y="48" text-anchor="middle" font-size="10" fill="#3b6fd4" font-family="var(--sans)"
+              font-weight="600">embedding</text>
+            <text x="50" y="62" text-anchor="middle" font-size="10" fill="#6b7280"
+              font-family="var(--mono)">E(token)</text>
+
+            <text x="105" y="54" text-anchor="middle" font-size="18" fill="#6b7280">+</text>
+
+            <rect x="120" y="30" width="80" height="40" rx="6" fill="#fceef3" stroke="#c2436a" stroke-width="1.5" />
+            <text x="160" y="48" text-anchor="middle" font-size="10" fill="#c2436a" font-family="var(--sans)"
+              font-weight="600">positional</text>
+            <text x="160" y="62" text-anchor="middle" font-size="10" fill="#6b7280"
+              font-family="var(--mono)">PE(pos)</text>
+
+            <text x="215" y="54" text-anchor="middle" font-size="18" fill="#6b7280">=</text>
+
+            <rect x="230" y="24" width="60" height="52" rx="6" fill="#edf9f3" stroke="#2d9e6b" stroke-width="1.5" />
+            <text x="260" y="46" text-anchor="middle" font-size="10" fill="#2d9e6b" font-family="var(--sans)"
+              font-weight="600">final</text>
+            <text x="260" y="60" text-anchor="middle" font-size="10" fill="#2d9e6b" font-family="var(--sans)"
+              font-weight="600">input</text>
+          </svg>
+        </div>
+        <div style="flex:2;min-width:260px">
+          <div class="eq-block" style="margin:0">
+            <span class="eq-label">Sinusoidal PE formula</span>
+            <div class="eq-main">PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
+              PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))</div>
+          </div>
+        </div>
+      </div>
+      <div class="figure-caption">Positional encoding is added (not concatenated) to the embedding. Each position gets a
+        unique sine/cosine fingerprint.</div>
+    </div>
+
+    <div class="callout amber fade-in">
+      <div class="callout-title">⚡ Modern variants</div>
+      Sinusoidal PE is fixed at training time. Modern models use learned alternatives: <strong>RoPE</strong> (Rotary
+      Position Embedding, used in Llama) rotates Q and K vectors by position, enabling better length generalization.
+      <strong>ALiBi</strong> adds a linear bias to attention scores instead. Both outperform the original sinusoidal
+      approach.
+    </div>
+
+    <!-- STEP 3 -->
+    <h2 id="step3">Step 3 — Query, Key, Value (Q, K, V)</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">3</div> Encoder · Attention setup
+    </div>
+
+    <p>This is where attention begins. Each token's embedding is projected into <em>three different vector spaces</em>
+      using three separate learned weight matrices: <strong>Wᵠ, Wᴷ, Wᵛ</strong>.</p>
+
+    <p>Think of it as giving each token three different business cards:</p>
+
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 640 190" style="width:100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="qa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+            </marker>
+          </defs>
+          <!-- X input -->
+          <rect x="20" y="60" width="80" height="40" rx="8" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5" />
+          <text x="60" y="78" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a2e"
+            font-family="var(--mono)">X</text>
+          <text x="60" y="93" text-anchor="middle" font-size="10" fill="#6b7280">(embedding)</text>
+
+          <!-- Three arrows -->
+          <line x1="102" y1="80" x2="170" y2="35" stroke="#9ca3af" stroke-width="1.2" marker-end="url(#qa)" />
+          <line x1="102" y1="80" x2="170" y2="80" stroke="#9ca3af" stroke-width="1.2" marker-end="url(#qa)" />
+          <line x1="102" y1="80" x2="170" y2="125" stroke="#9ca3af" stroke-width="1.2" marker-end="url(#qa)" />
+
+          <!-- Q box -->
+          <rect x="174" y="16" width="130" height="38" rx="8" fill="#eef3fd" stroke="#3b6fd4" stroke-width="1.5" />
+          <text x="239" y="32" text-anchor="middle" font-size="11" font-weight="700" fill="#3b6fd4"
+            font-family="var(--sans)">Q = X · Wᵠ</text>
+          <text x="239" y="46" text-anchor="middle" font-size="10" fill="#6b7280">"What am I searching for?"</text>
+
+          <!-- K box -->
+          <rect x="174" y="61" width="130" height="38" rx="8" fill="#fef3e2" stroke="#b45309" stroke-width="1.5" />
+          <text x="239" y="77" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309"
+            font-family="var(--sans)">K = X · Wᴷ</text>
+          <text x="239" y="91" text-anchor="middle" font-size="10" fill="#6b7280">"What do I advertise?"</text>
+
+          <!-- V box -->
+          <rect x="174" y="106" width="130" height="38" rx="8" fill="#edf9f3" stroke="#2d9e6b" stroke-width="1.5" />
+          <text x="239" y="122" text-anchor="middle" font-size="11" font-weight="700" fill="#2d9e6b"
+            font-family="var(--sans)">V = X · Wᵛ</text>
+          <text x="239" y="136" text-anchor="middle" font-size="10" fill="#6b7280">"What do I actually
+            contribute?"</text>
+
+          <!-- Dim labels -->
+          <text x="340" y="32" font-size="10" fill="#9ca3af" font-family="var(--mono)">→ shape: (n × d_k)</text>
+          <text x="340" y="77" font-size="10" fill="#9ca3af" font-family="var(--mono)">→ shape: (n × d_k)</text>
+          <text x="340" y="122" font-size="10" fill="#9ca3af" font-family="var(--mono)">→ shape: (n × d_v)</text>
+        </svg>
+      </div>
+      <div class="figure-caption">Three learned projections from the same input X. d_k = d_model / num_heads (e.g.
+        768/12 = 64 in BERT-base).</div>
+    </div>
+
+    <div class="callout enc fade-in">
+      <div class="callout-title">Intuition</div>
+      The <span class="term" data-tip="A Query asks which other tokens are relevant right now.">Query</span> is what
+      you're looking for. The <span class="term" data-tip="A Key advertises what information a token can match on.">Key</span>
+      is what you offer to other queries. The <span class="term" data-tip="A Value is the content that gets blended into the output when attention is high.">Value</span>
+      is the actual information you carry. When Q matches K well (high dot product), that token gets a large portion of
+      V blended into the result.
+    </div>
+
+    <!-- STEP 4 -->
+    <h2 id="step4">Step 4 — Scaled Dot-Product Attention</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">4</div> Encoder · The core mechanism
+    </div>
+
+    <p>Now we score every token against every other token. For each query vector, we compute its dot product with all
+      key vectors, scale by <code>√d_k</code>, apply
+      <span class="term" data-tip="Softmax turns raw scores into positive probabilities that add up to 1.">softmax</span>
+      to get a probability distribution, then use those probabilities to blend the
+      <span class="term" data-tip="Value vectors carry the information that gets mixed into the output.">value</span>
+      vectors.</p>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">The attention equation</span>
+      <div class="eq-main">Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k ) · V
+
+        Step by step:
+        Q: (n × d_k), K: (n × d_k), V: (n × d_v)
+        scores = Q · Kᵀ → shape: (n × n) [every pair scored]
+        scaled = scores / √d_k → prevents softmax saturation
+        weights = softmax(scaled) → rows sum to 1.0
+        output = weights · V → shape: (n × d_v)</div>
+    </div>
+
+    <p>The scaling by <code>√d_k</code> is critical. Without it, dot products grow large in high dimensions, pushing
+      softmax into regions with near-zero gradients — the model stops learning. With scaling, the variance stays at 1.
+    </p>
+
+    <!-- Interactive attention visualization -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <p style="font-family:var(--sans);font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Click a
+          word to see what it attends to:</p>
+        <div class="attn-sentence" id="attn-tokens"></div>
+        <div class="attn-canvas-wrap">
+          <canvas id="attn-canvas" height="160"></canvas>
+        </div>
+        <p class="attn-instruction" id="attn-instruction">← click any word above to visualise its attention weights</p>
+      </div>
+      <div class="figure-caption">Attention weights for the sentence "The animal didn't cross the street because it was
+        too tired". Notice how "it" attends most strongly to "animal" — this is coreference resolution happening inside
+        attention. The weights are illustrative, not from a trained checkpoint.</div>
+    </div>
+
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <div class="control-row">
+          <label for="toy-sentence">Toy attention matrix</label>
+          <input class="text-input" id="toy-sentence" type="text" value="the animal crossed the street"
+            aria-label="Toy sentence for attention matrix">
+          <button class="mode-btn" id="toy-attn-btn" type="button">Update</button>
+        </div>
+        <div class="mini-matrix" id="toy-attn-matrix" aria-label="Toy attention matrix"></div>
+        <p style="font-family:var(--sans);font-size:13px;color:var(--muted);margin-top:12px;margin-bottom:0">
+          This toy matrix is rule-based: darker cells mean stronger simulated attention. Real models learn these weights
+          from data.
+        </p>
+      </div>
+      <div class="figure-caption">This is a toy matrix, not a trained model. Nearby words and repeated words receive
+        stronger weights so you can see how attention becomes a token-to-token map.</div>
+    </div>
+
+    <div class="callout enc fade-in">
+      <div class="callout-title">Complexity</div>
+      Attention is <strong>O(n²·d)</strong> in both time and memory — quadratic in sequence length. For n=512, that's
+      262,144 attention pairs per layer per head. This is why long contexts (n=100k+) require Flash Attention or sparse
+      variants.
+    </div>
+
+    <!-- STEP 5 -->
+    <h2 id="step5">Step 5 — Multi-Head Attention</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">5</div> Encoder · Parallel attention
+    </div>
+
+    <p>Instead of one attention function over the full <code>d_model</code> space, we run <strong>h parallel attention
+        heads</strong> over smaller subspaces of dimension <code>d_k = d_model/h</code>. Each head independently learns
+      to focus on different relationships.</p>
+
+    <p>Click each head below to see what kind of relationship it typically specialises in:</p>
+
+    <!-- Multi-head interactive -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <div class="heads-grid" id="heads-grid"></div>
+        <div id="head-desc"
+          style="font-family:var(--sans);font-size:14px;color:var(--muted);margin-top:16px;min-height:40px;line-height:1.6;transition:all 0.2s">
+          ← click a head to learn its role
+        </div>
+        <div class="eq-block" style="margin-top:20px">
+      <span class="eq-label">Multi-head equation</span>
+      <div class="eq-main">headᵢ = Attention(Q·Wᵢᵠ, K·Wᵢᴷ, V·Wᵢᵛ)
+            each head: (n × d_k)
+            MultiHead(Q,K,V) = Concat(head₁,…,headₕ) · Wᴼ
+            shape out: (seq_len × d_model)</div>
+        </div>
+      </div>
+      <div class="figure-caption">BERT-base uses h=12 heads, each with d_k=64. GPT-3 uses h=96 heads with d_k=128.</div>
+    </div>
+
+    <!-- STEP 6 -->
+    <h2 id="step6">Step 6 — Feed-Forward + Residuals + LayerNorm</h2>
+
+    <div class="step-badge fade-in">
+      <div class="step-num-circle">6</div> Encoder · Per-token processing
+    </div>
+
+    <p>After multi-head attention, each token's vector passes through a <strong>position-wise feed-forward
+        network</strong> (FFN) — the same 2-layer MLP applied independently to every token. Its inner dimension is
+      typically 4×d_model.</p>
+
+    <p>Two critical additions wrap every sublayer: <strong>residual connections</strong> add the input back to the
+      output (preventing vanishing gradients, letting information skip damaged layers), and <strong>LayerNorm</strong>
+      normalises the result to stabilise training.</p>
+
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 580 180" style="width:100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="fa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+            </marker>
+          </defs>
+
+          <!-- Input x -->
+          <rect x="20" y="70" width="60" height="36" rx="6" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5" />
+          <text x="50" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a2e"
+            font-family="var(--mono)">x</text>
+
+          <!-- Residual skip -->
+          <path d="M50 70 L50 30 L310 30 L310 70" fill="none" stroke="#c2436a" stroke-width="1.5"
+            stroke-dasharray="4,3" />
+          <text x="180" y="22" text-anchor="middle" font-size="10" fill="#c2436a" font-family="var(--sans)">residual
+            (skip connection)</text>
+
+          <!-- Arrow -->
+          <line x1="82" y1="88" x2="120" y2="88" stroke="#6b7280" stroke-width="1.5" marker-end="url(#fa)" />
+
+          <!-- FFN box -->
+          <rect x="124" y="60" width="160" height="56" rx="8" fill="#eef3fd" stroke="#3b6fd4" stroke-width="2" />
+          <text x="204" y="84" text-anchor="middle" font-size="11" font-weight="700" fill="#3b6fd4"
+            font-family="var(--sans)">FFN(x)</text>
+          <text x="204" y="100" text-anchor="middle" font-size="10" fill="#6b7280" font-family="var(--mono)">max(0,
+            xW₁+b₁)W₂+b₂</text>
+
+          <!-- Arrow -->
+          <line x1="286" y1="88" x2="320" y2="88" stroke="#6b7280" stroke-width="1.5" marker-end="url(#fa)" />
+
+          <!-- Add circle -->
+          <circle cx="340" cy="88" r="18" fill="#fef3e2" stroke="#b45309" stroke-width="1.5" />
+          <text x="340" y="94" text-anchor="middle" font-size="16" font-weight="700" fill="#b45309">+</text>
+
+          <!-- Arrow -->
+          <line x1="360" y1="88" x2="394" y2="88" stroke="#6b7280" stroke-width="1.5" marker-end="url(#fa)" />
+
+          <!-- LayerNorm box -->
+          <rect x="398" y="62" width="110" height="52" rx="8" fill="#edf9f3" stroke="#2d9e6b" stroke-width="2" />
+          <text x="453" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="#2d9e6b"
+            font-family="var(--sans)">LayerNorm</text>
+          <text x="453" y="100" text-anchor="middle" font-size="10" fill="#6b7280" font-family="var(--mono)">(x +
+            sublayer)</text>
+
+          <!-- Arrow -->
+          <line x1="510" y1="88" x2="556" y2="88" stroke="#6b7280" stroke-width="1.5" marker-end="url(#fa)" />
+          <text x="565" y="92" font-size="13" font-weight="700" fill="#1a1a2e" font-family="var(--mono)">x′</text>
+        </svg>
+      </div>
+      <div class="figure-caption">Add & Norm: the input x is added back (residual) before LayerNorm. Same pattern
+        applies after multi-head attention. This is applied N times for N encoder layers.</div>
+    </div>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">FFN + residual + LayerNorm</span>
+      <div class="eq-main">FFN(x) = max(0, x·W₁ + b₁) · W₂ + b₂ [ReLU or SwiGLU]
+        output = LayerNorm(x + FFN(x))
+        also: = LayerNorm(x + MultiHeadAttn(x, x, x))</div>
+    </div>
+
+    <div class="callout amber fade-in">
+      <div class="callout-title">⚡ Pre-LN vs Post-LN</div>
+      The original paper uses Post-LN (norm after adding residual). Modern models (GPT-3, Llama) use
+      <strong>Pre-LN</strong> (norm applied to input before the sublayer). Pre-LN trains more stably without warmup and
+      doesn't suffer from gradient explosion in deep networks.
+    </div>
+
+    <!-- ────────────────── DECODER ────────────────── -->
+    <div class="section-divider fade-in">
+      <div class="section-divider-line"></div>
+      <span style="font-family:var(--sans);font-size:13px;display:flex;gap:20px;color:var(--dec)" id="decoder">DECODER —
+        STEPS 7a ·
+        7b</span>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <p>The decoder generates output tokens one at a time, autoregressive-ly. At each step, it has access to (a) its own
+      previously generated tokens and (b) the encoder's full contextual output. It uses two types of attention to
+      exploit both.</p>
+
+    <p class="fade-in">For the decoder and cross-attention diagrams, we switch to one translation example:
+      <em>"Je suis étudiant"</em> → <em>"I am a student"</em>. The animal sentence remains the running example for
+      self-attention and coreference.</p>
+
+    <!-- STEP 7a -->
+    <h2 id="step7a">Step 7a — Masked Self-Attention</h2>
+
+    <div class="step-badge dec fade-in">
+      <div class="step-num-circle">7a</div> Decoder · Causal attention
+    </div>
+
+    <p>The decoder's first attention layer looks at its own generated tokens so far. But during training, we feed the
+      entire target sequence at once (for efficiency). To prevent the model from "cheating" by looking at future tokens,
+      we apply a <strong>causal mask</strong>.</p>
+
+    <p>The mask sets the upper triangle of the attention score matrix to <code>−∞</code> before softmax. After softmax,
+      those positions become exactly 0 — the model is blind to future tokens.</p>
+
+    <!-- Causal mask visualization -->
+    <div class="figure fade-in">
+      <div class="figure-body" style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <p style="font-family:var(--sans);font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px">Causal
+            mask — 5-token example</p>
+          <div class="mask-grid" id="causal-mask" style="grid-template-columns:repeat(5,36px)"></div>
+          <p style="font-family:var(--sans);font-size:12px;color:var(--muted);margin-top:8px">green = can attend · red =
+            blocked (future)</p>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <div class="eq-block" style="margin:0">
+            <span class="eq-label">Masked attention equation</span>
+            <div class="eq-main">scores = Q · Kᵀ
+              masked = scores + M
+              where M[i,j] = 0 if j ≤ i
+              −∞ if j > i
+              weights = softmax(masked / √d_k)
+              output = weights · V</div>
+          </div>
+        </div>
+      </div>
+      <div class="figure-caption">Token at position t can only attend to positions 0…t. This forces the model to
+        generate each token without seeing what comes next — a requirement for autoregressive generation.</div>
+    </div>
+
+    <!-- STEP 7b -->
+    <h2 id="step7b">Step 7b — Cross-Attention (Encoder → Decoder)</h2>
+
+    <div class="step-badge dec fade-in">
+      <div class="step-num-circle">7b</div> Decoder · The bridge
+    </div>
+
+    <p>This is the layer that makes seq2seq translation possible — the bridge between the two languages. Here:</p>
+    <ul style="font-family:var(--sans);font-size:16px;line-height:1.8;padding-left:24px;margin-bottom:20px">
+      <li><strong>Q</strong> comes from the decoder's current English tokens (what English word are we generating?)</li>
+      <li><strong>K and V</strong> come from the encoder's output (the full French contextual embeddings)</li>
+    </ul>
+
+    <p>The decoder's Q asks: <em>"what do I need from the French context right now?"</em> The encoder's K and V answer
+      that question. This lets every decoder step attend to any part of the source sentence.</p>
+
+    <!-- Cross-attention diagram -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 620 230" style="width:100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ca" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+            </marker>
+            <marker id="ca-k" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#b45309" />
+            </marker>
+            <marker id="ca-v" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#2d9e6b" />
+            </marker>
+            <marker id="ca-q" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#3b6fd4" />
+            </marker>
+          </defs>
+
+          <!-- Attention box -->
+          <rect x="210" y="20" width="200" height="54" rx="9" fill="#fceef3" stroke="#c2436a" stroke-width="2" />
+          <text x="310" y="43" text-anchor="middle" font-size="12" font-weight="700" fill="#c2436a"
+            font-family="var(--sans)">Cross-Attention</text>
+          <text x="310" y="59" text-anchor="middle" font-size="10" fill="#6b7280"
+            font-family="var(--mono)">softmax(Q·Kᵀ/√d_k)·V</text>
+
+          <!-- Encoder output -->
+          <rect x="45" y="130" width="150" height="54" rx="8" fill="#eef3fd" stroke="#3b6fd4" stroke-width="1.5" />
+          <text x="120" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#3b6fd4"
+            font-family="var(--sans)">Encoder output</text>
+          <text x="120" y="168" text-anchor="middle" font-size="10" fill="#6b7280" font-family="var(--mono)">"Je suis
+            étudiant"</text>
+
+          <!-- K, V arrows from encoder output -->
+          <line x1="195" y1="144" x2="240" y2="82" stroke="#b45309" stroke-width="1.5" marker-end="url(#ca-k)" />
+          <line x1="195" y1="162" x2="270" y2="82" stroke="#2d9e6b" stroke-width="1.5" marker-end="url(#ca-v)" />
+          <text x="206" y="118" font-size="10" fill="#b45309" font-family="var(--mono)">K</text>
+          <text x="250" y="130" font-size="10" fill="#2d9e6b" font-family="var(--mono)">V</text>
+
+          <!-- Q arrow from decoder -->
+          <rect x="425" y="130" width="150" height="54" rx="8" fill="#fceef3" stroke="#c2436a" stroke-width="1.5" />
+          <text x="500" y="151" text-anchor="middle" font-size="11" font-weight="600" fill="#c2436a"
+            font-family="var(--sans)">Decoder hidden</text>
+          <text x="500" y="168" text-anchor="middle" font-size="10" fill="#6b7280" font-family="var(--mono)">"I am…"
+            (being built)</text>
+          <line x1="425" y1="144" x2="380" y2="82" stroke="#3b6fd4" stroke-width="1.5" marker-end="url(#ca-q)" />
+          <text x="410" y="118" font-size="10" fill="#3b6fd4" font-family="var(--mono)">Q</text>
+
+          <!-- Output arrow -->
+          <line x1="310" y1="74" x2="310" y2="166" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ca)" />
+          <rect x="245" y="170" width="130" height="34" rx="6" fill="#edf9f3" stroke="#2d9e6b" stroke-width="1.5" />
+          <text x="310" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="#2d9e6b"
+            font-family="var(--sans)">context-enriched</text>
+        </svg>
+      </div>
+      <div class="figure-caption">Cross-attention: the decoder's Q queries the encoder's K and V. This is the only place
+        the decoder "sees" the source sentence.</div>
+    </div>
+
+    <div class="callout dec fade-in">
+      <div class="callout-title">Architecture variants</div>
+      Encoder-only models (BERT) have no cross-attention and no masked self-attention. Decoder-only models (GPT, Llama)
+      have only masked self-attention — no encoder, no cross-attention. The full encoder+decoder architecture (T5, BART,
+      the original 2017 transformer) is used for translation and summarisation.
+    </div>
+
+    <!-- ────────────────── OUTPUT ────────────────── -->
+    <div class="section-divider fade-in">
+      <div class="section-divider-line"></div>
+      <span style="font-family:var(--sans);font-size:13px;display:flex;gap:20px;color:var(--out)" id="output">OUTPUT —
+        STEP 8</span>
+      <div class="section-divider-line"></div>
+    </div>
+
+    <!-- STEP 8 -->
+    <h2 id="step8">Step 8 — Output Probabilities</h2>
+
+    <div class="step-badge green fade-in">
+      <div class="step-num-circle">8</div> Output · Token prediction
+    </div>
+
+    <p>The final decoder hidden state is projected to the vocabulary size by a linear layer. The raw scores are called
+      <span class="term" data-tip="Logits are unnormalized scores. Higher logits become higher probabilities after softmax.">logits</span>,
+      then softmax converts them to a probability distribution. The next token is picked by one of several
+      <span class="term" data-tip="Decoding is the strategy used to choose tokens from the model's probability distribution.">decoding</span>
+      strategies.</p>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">Output projection + softmax</span>
+      <div class="eq-main">final_hidden: (d_model)
+        Wᵒᵘᵗ: (d_model × vocab_size)
+        logits = final_hidden · Wᵒᵘᵗ → shape: (vocab_size) e.g. 32,000
+        P(word_t) = softmax(logits)
+        next_token = argmax(P) [greedy]
+        or sample(P, T=temp) [sampling]
+        or beam_search(P, k) [beam]</div>
+    </div>
+
+    <!-- Probability bar chart -->
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <p style="font-family:var(--sans);font-size:13px;font-weight:600;color:var(--muted);margin-bottom:16px">P(next
+          token | "The animal didn't cross…") — top candidates:</p>
+        <div class="control-row">
+          <label for="temperature-slider">Temperature</label>
+          <input class="range-control" id="temperature-slider" type="range" min="0.4" max="1.8" step="0.1" value="1">
+          <span class="temp-readout" id="temperature-value">1.0</span>
+        </div>
+        <div class="prob-bars" id="prob-bars"></div>
+      </div>
+      <div class="figure-caption">The model assigns probability mass across the entire vocabulary (~32k tokens). Greedy
+        decoding picks argmax. Temperature T&lt;1 sharpens, T&gt;1 flattens the distribution.</div>
+    </div>
+
+    <div class="callout green fade-in">
+      <div class="callout-title">Weight tying</div>
+      The output projection matrix Wᵒᵘᵗ (d_model × vocab_size) is often <strong>tied</strong> to the input embedding
+      matrix — they share the same weights. This saves ~20-100M parameters and often improves performance because
+      similar tokens get similar representations at both input and output.
+    </div>
+
+    <!-- TRAINING -->
+    <h2 id="training">How Transformers Learn</h2>
+
+    <p class="fade-in">The architecture above describes the forward pass: tokens go in, probabilities come out. Learning
+      happens when the model compares those probabilities with the correct next token, measures the error, and updates
+      its weights through backpropagation.</p>
+
+    <div class="figure fade-in">
+      <div class="figure-body">
+        <svg viewBox="0 0 680 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;font-family:var(--sans)">
+          <defs>
+            <marker id="train-arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#6b7280" />
+            </marker>
+            <marker id="train-back" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#b45309" />
+            </marker>
+          </defs>
+          <rect x="20" y="50" width="120" height="48" rx="8" fill="#eef3fd" stroke="#3b6fd4" stroke-width="1.5" />
+          <text x="80" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#3b6fd4">Training text</text>
+          <text x="80" y="86" text-anchor="middle" font-size="10" fill="#6b7280">tokens shifted</text>
+          <line x1="145" y1="74" x2="210" y2="74" stroke="#6b7280" stroke-width="1.5" marker-end="url(#train-arr)" />
+          <rect x="215" y="38" width="150" height="72" rx="10" fill="#fceef3" stroke="#c2436a" stroke-width="1.5" />
+          <text x="290" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#c2436a">Transformer</text>
+          <text x="290" y="83" text-anchor="middle" font-size="10" fill="#6b7280">predicts next token</text>
+          <line x1="370" y1="74" x2="435" y2="74" stroke="#6b7280" stroke-width="1.5" marker-end="url(#train-arr)" />
+          <rect x="440" y="50" width="100" height="48" rx="8" fill="#edf9f3" stroke="#2d9e6b" stroke-width="1.5" />
+          <text x="490" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#2d9e6b">Loss</text>
+          <text x="490" y="86" text-anchor="middle" font-size="10" fill="#6b7280">cross-entropy</text>
+          <path d="M490 104 C470 132, 405 142, 330 118" fill="none" stroke="#b45309" stroke-width="1.5"
+            marker-end="url(#train-back)" />
+          <text x="405" y="146" text-anchor="middle" font-size="10" fill="#b45309">backprop updates weights</text>
+        </svg>
+      </div>
+      <div class="figure-caption">A language model learns by predicting held-out tokens from context, then nudging its
+        weights to put more probability on the correct answer next time.</div>
+    </div>
+
+    <div class="eq-block fade-in">
+      <span class="eq-label">Next-token objective</span>
+      <div class="eq-main">given tokens: x₁, x₂, ..., xₜ
+        train target: x₂, x₃, ..., xₜ₊₁
+        logits_t = Transformer(x≤t)
+        probs_t = softmax(logits_t)
+        loss_t = -log P(xₜ₊₁ | x≤t)
+        total_loss = average cross_entropy over all positions
+        optimizer step: weights ← weights - learning_rate · gradient</div>
+    </div>
+
+    <p class="fade-in">Cross-entropy punishes the model when it assigns low probability to the correct next token.
+      Backpropagation computes how each parameter contributed to that error, and gradient descent nudges the weights so
+      the next-token distribution becomes slightly better on future batches.</p>
+
+    <div class="guide-grid fade-in">
+      <div class="guide-card">
+        <div class="guide-card-title">Pretraining</div>
+        The model sees massive text corpora and learns general patterns: grammar, facts, style, code, reasoning traces,
+        and world regularities.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Teacher forcing</div>
+        During training, the model receives the correct previous tokens, even if it would have generated a wrong token
+        on its own.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Fine-tuning</div>
+        After pretraining, models can be adapted for instruction following, chat, tool use, retrieval, safety behavior,
+        or domain-specific work.
+      </div>
+    </div>
+
+    <!-- FROM TRANSFORMERS TO LLMS -->
+    <h2 id="llms">From The Original Transformer To Modern LLMs</h2>
+
+    <p class="fade-in">Most chat and code models people use today are decoder-only Transformers. They repeat one simple
+      loop: read the context, predict the next token, append it, and repeat. Scale, data quality, training recipes, and
+      inference systems make that loop feel intelligent.</p>
+
+    <div class="callout enc fade-in">
+      <div class="callout-title">Key bridge</div>
+      The classic Transformer explains the mechanism. Modern LLMs add scale, better positional methods such as RoPE,
+      larger context windows, instruction tuning, reinforcement learning from feedback, retrieval, tools, and careful
+      serving infrastructure.
+    </div>
+
+    <h3>Implementation mental model</h3>
+    <div class="guide-grid fade-in">
+      <div class="guide-card">
+        <div class="guide-card-title">Embeddings</div>
+        A token embedding is a table lookup. The model learns the table, but inference just indexes rows by token ID.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Attention</div>
+        Self-attention is mostly batched matrix multiplication: project Q/K/V, multiply QKᵀ, softmax, then multiply by
+        V.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">FFN</div>
+        The feed-forward network is applied independently to each token position. Attention mixes tokens; the FFN
+        transforms each mixed representation.
+      </div>
+    </div>
+
+    <div class="callout green fade-in">
+      <div class="callout-title">Inference loop</div>
+      Decoder-only LLMs generate by repeating: run the model on the current context, sample one token, append it, and
+      continue. A KV cache stores previous keys and values so each new token does not recompute the entire past.
+    </div>
+
+    <div class="figure fade-in">
+      <div class="figure-body" style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Concept</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Why it matters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px;font-weight:700;color:var(--dec)">Context window</td>
+              <td style="padding:10px 12px">The maximum number of tokens the model can attend to at once.</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px;font-weight:700;color:var(--enc)">Scaling laws</td>
+              <td style="padding:10px 12px">Performance tends to improve predictably with more compute, data, and
+                parameters, though data quality and architecture choices matter enormously.</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px;font-weight:700;color:var(--green)">Prompting</td>
+              <td style="padding:10px 12px">A prompt is just part of the token context. The model conditions its next
+                token distribution on everything inside that context.</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px;font-weight:700;color:var(--amber)">KV cache</td>
+              <td style="padding:10px 12px">At inference time, previous keys and values are cached so the model does not
+                recompute the entire context for every generated token.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="figure-caption">The same attention machinery becomes much more powerful when trained at scale and
+        wrapped in modern inference techniques.</div>
+    </div>
+
+    <h3>Tokenization in practice</h3>
+    <p class="fade-in">Modern tokenizers usually split text into subwords rather than full words. Methods such as BPE,
+      WordPiece, and SentencePiece let a model handle rare words, names, code, and many languages with a fixed
+      vocabulary. A word like <code>unbelievable</code> might become <code>un</code> + <code>believ</code> +
+      <code>able</code>, depending on the tokenizer.</p>
+
+    <h3>Decoding strategies</h3>
+    <p class="fade-in">Greedy decoding always picks the highest-probability token. Beam search keeps several likely
+      paths in parallel. Sampling methods such as top-k, top-p, and temperature trade determinism for variety.</p>
+
+    <!-- LIMITATIONS -->
+    <h2 id="limits">Limitations And Responsible Use</h2>
+
+    <div class="guide-grid fade-in">
+      <div class="guide-card">
+        <div class="guide-card-title">Hallucination</div>
+        A Transformer predicts plausible tokens, not guaranteed truth. Retrieval, citations, tools, and verification
+        help reduce this risk.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Context cost</div>
+        Attention grows with sequence length. Long-context models need memory-efficient kernels and careful prompt
+        design.
+      </div>
+      <div class="guide-card">
+        <div class="guide-card-title">Bias and safety</div>
+        Models inherit patterns from training data and alignment choices. Evaluation should include fairness,
+        robustness, and misuse risks.
+      </div>
+    </div>
+
+    <div class="callout amber fade-in">
+      <div class="callout-title">Attention is not always explanation</div>
+      Attention weights show where information is mixed, but they are not a complete proof of why a model made a
+      decision. They are useful signals, not perfect explanations.
+    </div>
+
+    <!-- COMMUNITY -->
+    <h2 id="community">Open Community Notes</h2>
+
+    <p class="fade-in">This guide is intended to be free to read, share, translate, and improve. If you publish it,
+      keep the source visible, invite corrections, and make the license explicit so teachers, students, and builders can
+      reuse it without guessing.</p>
+
+    <!-- <div class="license-strip fade-in">
+      Suggested license: content under <strong>Creative Commons Attribution 4.0</strong>; page code under
+      <strong>MIT</strong>. Add your repository link here when you host the project so readers can report issues or
+      contribute improvements.
+    </div> -->
+
+    <!-- <div class="callout green fade-in">
+      <div class="callout-title">GitHub Pages ready</div>
+      This is a static page, so it can be hosted directly with GitHub Pages. Keep <code>index.html</code> and
+      <code>transformers.png</code> in the repository root, add a <code>README.md</code>, add a license file, then enable
+      Pages from the repository settings.
+    </div> -->
+
+    <div class="figure fade-in">
+      <div class="figure-body" style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Resource</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">Why read it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px"><a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></td>
+              <td style="padding:10px 12px">The original Transformer paper.</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px"><a href="https://arxiv.org/abs/1810.04805">BERT</a></td>
+              <td style="padding:10px 12px">The encoder-only model family that made bidirectional pretraining famous.</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f0ede8">
+              <td style="padding:10px 12px"><a href="https://arxiv.org/abs/2005.14165">GPT-3</a></td>
+              <td style="padding:10px 12px">A clear example of decoder-only scaling for few-shot learning.</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px"><a href="https://arxiv.org/abs/2104.09864">RoFormer / RoPE</a></td>
+              <td style="padding:10px 12px">A useful reference for rotary position embeddings used in many modern LLMs.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h2 id="notebook">Explore The Code</h2>
+    <p class="fade-in">The companion notebook implements the core Transformer ideas with runnable Python examples.
+      Open it in Colab to execute the cells and inspect the outputs without changing the original repository.</p>
+    <div class="notebook-actions fade-in">
+      <a class="notebook-link primary"
+        href="https://colab.research.google.com/github/sabari-ui/transformers-visual-guide/blob/main/transformers.ipynb">
+        Run in Google Colab
+      </a>
+      <a class="notebook-link"
+        href="https://github.com/sabari-ui/transformers-visual-guide/blob/main/transformers.ipynb">
+        View notebook source
+      </a>
+    </div>
+    <p class="notebook-note fade-in">Visitors can run or modify their temporary Colab session, but they cannot overwrite
+      the original notebook in this repository.</p>
+
+    <!-- SUMMARY TABLE -->
+    <h2>Summary — All 8 Steps</h2>
+
+    <div class="figure fade-in">
+      <div class="figure-body" style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:14px">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th
+                style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">
+                Step</th>
+              <th
+                style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">
+                Name</th>
+              <th
+                style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">
+                Key equation</th>
+              <th
+                style="padding:10px 12px;text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em">
+                Complexity</th>
+            </tr>
+          </thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ABOUT ME -->
+    <section class="about-section fade-in" id="about">
+      <div class="about-kicker">Created by</div>
+      <div class="about-name">Sabari G</div>
+      <div class="about-meta">AI/ML Engineer · MBA in Finance - INDIA</div> 
+        <!-- <div>  India</div> -->
+      <div class="about-contact" aria-label="Contact links">
+        <a class="about-link" href="mailto:sabariguru47@gmail.com" aria-label="Email Sabari.G" title="Email">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6h16v12H4V6Z" stroke="currentColor" stroke-width="1.8" />
+            <path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.8" />
+          </svg>
+        </a>
+        <a class="about-link" href="https://github.com/sabari-ui" aria-label="GitHub profile" title="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49v-1.72c-2.78.62-3.37-1.37-3.37-1.37-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.63-1.37-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.04 1.03-2.76-.1-.26-.45-1.31.1-2.72 0 0 .84-.28 2.75 1.05A9.35 9.35 0 0 1 12 6.96c.85 0 1.7.12 2.5.34 1.9-1.33 2.74-1.05 2.74-1.05.55 1.41.2 2.46.1 2.72.64.72 1.03 1.64 1.03 2.76 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9v2.79c0 .27.18.59.69.49A10.1 10.1 0 0 0 22 12.26C22 6.58 17.52 2 12 2Z" />
+          </svg>
+        </a>
+        <a class="about-link" href="https://www.linkedin.com/in/sabari-g-24072002ya" aria-label="LinkedIn profile" title="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M5.34 8.86H2.67V21h2.67V8.86ZM4.01 3a1.55 1.55 0 1 0 0 3.1A1.55 1.55 0 0 0 4.01 3ZM21.33 14.12c0-3.25-1.73-4.76-4.03-4.76-1.86 0-2.69 1.02-3.15 1.74V8.86h-2.66V21h2.66v-6.01c0-1.61.3-3.17 2.3-3.17 1.97 0 2 1.84 2 3.27V21h2.88v-6.88Z" />
+          </svg>
+        </a>
+      </div>
+    </section>
+
+  </article>
+
+  <footer>
+    <span>Based on <a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a> — Vaswani et al. 2017</span>
+    <span>Open for the AI community ·</span>
+  </footer>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <button id="back-to-top" title="Go to top">^</button>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
