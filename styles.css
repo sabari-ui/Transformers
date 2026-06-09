@@ -725,9 +725,9 @@
     }
 
     .colab-button {
-      height: 34px;
+      height: 35px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 0px;
       padding: 0 11px;
       display: inline-flex;
       align-items: center;
@@ -735,8 +735,8 @@
       color: var(--text);
       background: #fff;
       text-decoration: none;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 200;
       transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.2s;
     }
 
