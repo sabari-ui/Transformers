@@ -2,10 +2,10 @@
 
 An interactive visual guide to Transformer architecture, built as a single static HTML page.
 
-[Read the interactive article](https://sabari-ui.github.io/transformers-visual-guide/)
+[Read the interactive article](https://sabari-ui.github.io/Transformers/)
 
-[View the notebook on GitHub](https://github.com/sabari-ui/transformers-visual-guide/blob/main/transformers.ipynb) |
-[Run the notebook in Google Colab](https://colab.research.google.com/github/sabari-ui/transformers-visual-guide/blob/main/transformers.ipynb)
+[View the notebook on GitHub](https://github.com/sabari-ui/Transformers/blob/main/transformers.ipynb) |
+[Run the notebook in Google Colab](https://colab.research.google.com/github/sabari-ui/Transformers/blob/main/transformers.ipynb)
 
 The GitHub repository remains read-only for visitors. Colab users can run and change a temporary session or save a
 copy to their own Google Drive, but they cannot overwrite the original notebook in this repository.
